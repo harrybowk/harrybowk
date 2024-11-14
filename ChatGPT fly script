@@ -1,0 +1,77 @@
+-- Fly Script for Roblox
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local flying = false
+local speed = 50 -- How fast the player flies
+local flyHeight = 20 -- How high the player flies
+
+-- Initialize the flying part (a BodyGyro and BodyVelocity will be used)
+local bodyGyro
+local bodyVelocity
+
+-- Function to enable flying
+local function startFlying()
+    if not flying then
+        flying = true
+        -- Create BodyGyro to control the character's orientation
+        bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.MaxTorque = Vector3.new(400000, 400000, 400000) -- Prevent tilting
+        bodyGyro.D = 10 -- Dampening effect to stabilize rotation
+        bodyGyro.CFrame = character.HumanoidRootPart.CFrame
+        bodyGyro.Parent = character.HumanoidRootPart
+        
+        -- Create BodyVelocity to control movement
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000) -- Apply force to all directions
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.Parent = character.HumanoidRootPart
+        
+        -- Stop character's downward force (gravity)
+        humanoid.PlatformStand = true
+        humanoid.AutoRotate = false
+    end
+end
+
+-- Function to stop flying
+local function stopFlying()
+    if flying then
+        flying = false
+        if bodyGyro then bodyGyro:Destroy() end
+        if bodyVelocity then bodyVelocity:Destroy() end
+        
+        humanoid.PlatformStand = false
+        humanoid.AutoRotate = true
+    end
+end
+
+-- Update flying movement (keeping player in the air and allowing directional control)
+local function updateFlying()
+    if flying then
+        -- Move the character in the direction the camera is facing
+        local camera = game.Workspace.CurrentCamera
+        local direction = camera.CFrame.LookVector
+        bodyVelocity.Velocity = direction * speed + Vector3.new(0, flyHeight, 0)
+    end
+end
+
+-- Keybinds for flying
+local UserInputService = game:GetService("UserInputService")
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == Enum.KeyCode.Space then
+        startFlying()
+    end
+
+    if input.KeyCode == Enum.KeyCode.LeftShift then
+        stopFlying()
+    end
+end)
+
+-- Keep updating flying movement
+game:GetService("RunService").Heartbeat:Connect(function()
+    updateFlying()
+end)
